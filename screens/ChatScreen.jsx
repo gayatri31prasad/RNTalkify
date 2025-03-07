@@ -1,7 +1,7 @@
 // screens/ChatScreen.js
 import moment from 'moment';
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TextInput, Button, FlatList, StyleSheet, View } from 'react-native';
+import { SafeAreaView, Text, TextInput, Button, FlatList, StyleSheet, View, TouchableOpacity, Image } from 'react-native';
 
 export default function ChatScreen({ route }) {
   const { username, roomId, roomName } = route.params;
@@ -13,7 +13,7 @@ export default function ChatScreen({ route }) {
 
   let todaysDate = moment().format('DD-MMM-YYYY')
   // WebSocket URL
-  const SOCKET_URL = `ws://chat-api-k4vi.onrender.com/ws/${roomId}/${username}?auth=public`; // Use 'wss://' if required
+  const SOCKET_URL = `wss://chat-api-k4vi.onrender.com/ws/${roomId}/${username}?auth=public`; // Use 'wss://' if required
   
   useEffect(() => {
     fetch(`https://chat-api-k4vi.onrender.com/chat/rooms/${roomId}/messages`)
@@ -105,12 +105,15 @@ export default function ChatScreen({ route }) {
                 {todaysDate}
               </Text>
             </View>}
-          <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:8,backgroundColor:item?.username === username ? '#FF8000' : '#eee', maxWidth:'80%',alignSelf:item?.username === username ? 'flex-end' : 'flex-start' }}>
-            <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username)}}>{item.username ? `${item.username} ` : ''}</Text>
-            <Text allowFontScaling={false} style={{fontSize:14,fontWeight:'500',padding:6}}>
-              {item.content}
-            </Text>
-            <Text allowFontScaling={false} style={{alignSelf:'flex-end',fontSize:12}}>{moment(item.created_at).format('h:mm a')}</Text>
+          <View style={{flexDirection:'row',gap:2}}>
+            <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />
+            <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:8,backgroundColor:item?.username === username ? '#FF8000' : '#eee', maxWidth:'80%',alignSelf:item?.username === username ? 'flex-end' : 'flex-start' }}>
+              <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username)}}>{item.username ? `${item.username} ` : ''}</Text>
+              <Text allowFontScaling={false} style={{fontSize:14,fontWeight:'500',padding:6}}>
+                {item.content}
+              </Text>
+              <Text allowFontScaling={false} style={{alignSelf:'flex-end',fontSize:12}}>{moment(item.created_at).format('h:mm a')}</Text>
+            </View>
           </View>
         </>
         )}}
@@ -119,13 +122,19 @@ export default function ChatScreen({ route }) {
         </>)}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
-      <TextInput
-        style={[styles.input, ]}
-        placeholder="Type your message..."
-        value={inputMessage}
-        onChangeText={setInputMessage}
-      />
-      <Button title="Send" onPress={sendMessage} />
+      <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
+        <TextInput
+          style={[styles.input,{flex:1} ]}
+          placeholder="Type your message..."
+          value={inputMessage}
+          multiline={true}
+          onChangeText={setInputMessage}
+          />
+        {/* <Button title="Send" onPress={sendMessage} /> */}
+        <TouchableOpacity style={{ backgroundColor: '#FF8000', padding: 8, borderRadius: 6}} onPress={sendMessage}>
+          <Text  allowFontScaling={false} style={{fontSize:14,fontWeight:'600',color:'#fff',textAlign:'center'}}>Send</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -133,6 +142,6 @@ export default function ChatScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 12, backgroundColor: '#fff' },
   chatList: { flex: 1, marginVertical: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginVertical: 8, borderRadius: 4 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginVertical: 4, borderRadius: 4 },
 });
 
