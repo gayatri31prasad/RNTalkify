@@ -13,14 +13,15 @@ export default function ChatScreen({ route }) {
 
   let todaysDate = moment().format('DD-MMM-YYYY')
   // WebSocket URL
-  const SOCKET_URL = `wss://chat-api-k4vi.onrender.com/ws/${roomId}/${username}?auth=public`; // Use 'wss://' if required
+  const SOCKET_URL = `https://chat-api-k4vi.onrender.com/ws/${roomId}/${username}`; // Use 'wss://' if required
+  // const SOCKET_URL = `https://chat-api-k4vi.onrender.com/ws/82329acf-5080-45df-81ad-28b2c4dff898/Prem`; // Use 'wss://' if required
   
   useEffect(() => {
     fetch(`https://chat-api-k4vi.onrender.com/chat/rooms/${roomId}/messages`)
     .then(response => response.json())
     .then(message => setMessages(message?.reverse()))
     .catch(error => console.error('Error fetching messages:', error));
-    // console.log('socket ',SOCKET_URL)
+    console.log('socket ',SOCKET_URL)
     socketRef.current = new WebSocket(SOCKET_URL);
     // console.log("WebSocket URL:", socketRef.current);
 
@@ -32,7 +33,12 @@ export default function ChatScreen({ route }) {
       try {
         const message = JSON.parse(event.data);
         console.log('Received message:', message);
-        setMessages((prevMessages) => [...prevMessages, message]);
+        if(message.event == 'message'){
+          setMessages((prevMessages) => [...prevMessages, message?.message]);
+        }else{
+          
+          // setMessages((prevMessages) => [...prevMessages, message]);
+        }
       } catch (error) {
         console.error("Error parsing message:", error, "Received data:", event.data);
       }
@@ -74,13 +80,13 @@ export default function ChatScreen({ route }) {
   };
   const stringToColor = (str) => {
     let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < str?.length; i++) {
+      hash = str?.charCodeAt(i) + ((hash << 5) - hash);
     }
     let color = "#";
     for (let i = 0; i < 3; i++) {
       const value = (hash >> (i * 8)) & 0xff;
-      color += value.toString(16).padStart(2, "0");
+      color += value?.toString(16)?.padStart(2, "0");
     }
     return color;
   };
@@ -98,6 +104,7 @@ export default function ChatScreen({ route }) {
           let NDate = moment(item?.created_at).format('DD-MMM-YYYY')
           let boolean = todaysDate != NDate
           todaysDate = NDate
+          let selfStyle = {alignSelf:item?.username === username ? 'flex-end' : 'flex-start',backgroundColor:item?.username === username ? '#9ED5C5' : '#eee',}
           return(<>
           {boolean && 
             <View style={{marginTop:5,paddingHorizontal:10,paddingVertical:2,alignSelf:'center',backgroundColor:'#FF800099',borderRadius:12}}>
@@ -105,10 +112,10 @@ export default function ChatScreen({ route }) {
                 {todaysDate}
               </Text>
             </View>}
-          <View style={{flexDirection:'row',gap:2}}>
-            <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />
-            <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:8,backgroundColor:item?.username === username ? '#FF8000' : '#eee', maxWidth:'80%',alignSelf:item?.username === username ? 'flex-end' : 'flex-start' }}>
-              <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username)}}>{item.username ? `${item.username} ` : ''}</Text>
+          <View style={{flexDirection:'row',gap:2,width:'100%'}}>
+            <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item?.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />
+            <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:10, maxWidth:'80%',...selfStyle }}>
+              <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username)}}>{item?.username ? `${item?.username} ` : ''}</Text>
               <Text allowFontScaling={false} style={{fontSize:14,fontWeight:'500',padding:6}}>
                 {item.content}
               </Text>

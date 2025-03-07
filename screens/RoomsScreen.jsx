@@ -12,7 +12,10 @@ export default function RoomsScreen({ route, navigation }) {
       try {
         const response = await fetch('https://chat-api-k4vi.onrender.com/chat/rooms');
         const data = await response.json();
-        setRooms(data);
+        const newData = data.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        )
+        setRooms(newData);
         // console.log('room data: ',data)
       } catch (error) {
         console.error('Error fetching rooms:', error);
