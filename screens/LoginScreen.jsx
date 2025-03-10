@@ -8,7 +8,19 @@ export default function LoginScreen({ navigation }) {
   const handleLogin = () => {
     if (username.trim()) {
       // Optionally, call an API to register the user.
-      navigation.navigate('Rooms', { username });
+      const body = JSON.stringify({ username:username.replaceAll(' ', '_') })
+      fetch('https://chat-api-k4vi.onrender.com/chat/username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+      .then(res=>res.json())
+      .then(res=>{
+        console.log('then',res)
+        navigation.navigate('Rooms', {  username  });
+        setUsername('')
+      })
+        .catch(err=>console.log('err',err))
     }
   };
 

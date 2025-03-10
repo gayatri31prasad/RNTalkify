@@ -16,6 +16,11 @@ export default function CreateRoomScreen({ route, navigation }) {
         });
         const newRoom = await response.json();
         console.log('newRoom:- ',newRoom)
+        if(newRoom?.detail == 'Room with this name already exists'){
+          Alert.alert('The room name already exists.');
+          return
+        }
+        navigation.goBack();
         navigation.navigate('Chat', {
           username,
           roomId: newRoom.id,

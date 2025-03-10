@@ -10,10 +10,10 @@ export default function ChatScreen({ route }) {
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
-
+  
   let todaysDate = moment().format('DD-MMM-YYYY')
   // WebSocket URL
-  const SOCKET_URL = `https://chat-api-k4vi.onrender.com/ws/${roomId}/${username}`; // Use 'wss://' if required
+  const SOCKET_URL = `https://chat-api-k4vi.onrender.com/ws/${roomId}/${username.replaceAll(' ', '_')}`; // Use 'wss://' if required
   // const SOCKET_URL = `https://chat-api-k4vi.onrender.com/ws/82329acf-5080-45df-81ad-28b2c4dff898/Prem`; // Use 'wss://' if required
   
   useEffect(() => {
@@ -35,9 +35,8 @@ export default function ChatScreen({ route }) {
         console.log('Received message:', message);
         if(message.event == 'message'){
           setMessages((prevMessages) => [...prevMessages, message?.message]);
-        }else{
-          
-          // setMessages((prevMessages) => [...prevMessages, message]);
+        }else{          
+          setMessages((prevMessages) => [...prevMessages, {...message ,at: new Date()}]);
         }
       } catch (error) {
         console.error("Error parsing message:", error, "Received data:", event.data);
@@ -104,23 +103,28 @@ export default function ChatScreen({ route }) {
           let NDate = moment(item?.created_at).format('DD-MMM-YYYY')
           let boolean = todaysDate != NDate
           todaysDate = NDate
-          let selfStyle = {alignSelf:item?.username === username ? 'flex-end' : 'flex-start',backgroundColor:item?.username === username ? '#9ED5C5' : '#eee',}
-          return(<>
+
+          const isSelf = item?.username === username.replaceAll(' ', '_');
+
+          return(
+          item?.event ?
+             <Text allowFontScaling={false} style={{alignSelf:'center',fontSize:12,paddingVertical:5}}>{item?.username ? `${item?.username.replaceAll('_', ' ')} ` : ''} {item?.event} the Room</Text>
+             :
+          <>
           {boolean && 
-            <View style={{marginTop:5,paddingHorizontal:10,paddingVertical:2,alignSelf:'center',backgroundColor:'#FF800099',borderRadius:12}}>
-              <Text style={{color:'#fff',fontSize:12,fontWeight:'500'}}>
+              <Text style={{color:'#AAA',fontSize:12,fontWeight:'500',alignSelf:'center'}}>
                 {todaysDate}
-              </Text>
-            </View>}
-          <View style={{flexDirection:'row',gap:2,width:'100%'}}>
-            <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item?.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />
-            <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:10, maxWidth:'80%',...selfStyle }}>
-              <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username)}}>{item?.username ? `${item?.username} ` : ''}</Text>
+              </Text>}
+          <View style={{flexDirection:'row',gap:2,justifyContent: isSelf ? 'flex-end' : 'flex-start',}}>
+            {!isSelf && <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item?.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />}
+            <View style={{ marginBottom: 8,paddingVertical:4,paddingHorizontal:6,borderRadius:10, maxWidth:'80%',backgroundColor:isSelf ? '#fff' : '#ddd',borderWidth:1,borderColor:'#ccc' }}>
+              <Text allowFontScaling={false} style={{fontSize:12,fontWeight:'500',textTransform:'capitalize',borderBottomWidth:1,borderColor:'#ccc',color:stringToColor(item?.username.replaceAll('_',' '))}}>{item?.username ? `${item?.username.replaceAll('_', ' ')} ` : ''}</Text>
               <Text allowFontScaling={false} style={{fontSize:14,fontWeight:'500',padding:6}}>
                 {item.content}
               </Text>
               <Text allowFontScaling={false} style={{alignSelf:'flex-end',fontSize:12}}>{moment(item.created_at).format('h:mm a')}</Text>
             </View>
+            {isSelf && <Image source={{uri:`https://avatar.iran.liara.run/public/boy?username=${item?.username}.png`}} alt='GroupImage' style={{ width: 20, height: 20,backgroundColor:'#ccc',borderRadius:100 }} />}
           </View>
         </>
         )}}
@@ -147,8 +151,8 @@ export default function ChatScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 12, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 12, backgroundColor: '#edede9' },
   chatList: { flex: 1, marginVertical: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, marginVertical: 4, borderRadius: 4 },
+  input: { borderWidth: 1, borderColor: '#ccc',backgroundColor:'#fff', padding: 8, marginVertical: 4, borderRadius: 4 },
 });
 
