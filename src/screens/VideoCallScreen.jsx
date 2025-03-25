@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, View, Button, Text, TextInput, FlatList, StyleSheet, AppState, Platform } from 'react-native';
+import { SafeAreaView, View, Button, Text, TextInput, FlatList, StyleSheet, AppState, Platform, Animated, ScrollView } from 'react-native';
 import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices, RTCView } from 'react-native-webrtc';
 import io from 'socket.io-client';
 import notifee, { AndroidImportance } from '@notifee/react-native';
+import InCallManager from 'react-native-incall-manager';
 
 // Replace with your signaling server address
-const SOCKET_SERVER_URL = 'http://localhost:3000/';
+const SOCKET_SERVER_URL = 'http://172.20.1.194:3000/';
 const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 const VideoCallScreen = () => {
@@ -18,11 +19,13 @@ const VideoCallScreen = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true); // Video call: video enabled by default
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
 
   // Monitor app state changes to know if the app is active
   useEffect(() => {
+    // fetch(SOCKET_SERVER_URL).then(res=>res.json()).then(res=>console.log('res',res))
     const subscription = AppState.addEventListener('change', nextState => {
       appState.current = nextState;
     });
@@ -69,7 +72,7 @@ const VideoCallScreen = () => {
         try {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (error) {
-          console.error('Error adding ICE candidate', error);
+          console.log('Error adding ICE candidate', error);
         }
       }
     });
@@ -116,6 +119,13 @@ const VideoCallScreen = () => {
     });
     setLocalStream(stream);
 
+    // Set speakerphone on
+    setTimeout(() => {
+      InCallManager.start({ media: 'audio' }); // Ensure InCallManager is started
+      InCallManager.setForceSpeakerphoneOn(true); // Try forcing speaker
+      InCallManager.setSpeakerphoneOn(true);  // Turns on speaker
+    }, 1000);
+
     // Add all tracks to the peer connection
     stream.getTracks().forEach(track => {
       peerConnectionRef.current.addTrack(track, stream);
@@ -131,8 +141,8 @@ const VideoCallScreen = () => {
     // When a remote stream is received, set it in state
     peerConnectionRef.current.ontrack = (event) => {
       console.log('Remote track received', event);
-      if (event.streams && event.streams[0]) {
-        setRemoteStream(event.streams[0]);
+      if (event.streams?.length > 0) {
+        setRemoteStream(event.streams);
       }
     };
   };
@@ -157,7 +167,23 @@ const VideoCallScreen = () => {
       setChatInput('');
     }
   };
-
+  const endCall = () => {
+    // if (peerConnectionRef.current) {
+    //   peerConnectionRef.current.close();
+    //   peerConnectionRef.current = null;
+    // }
+    // if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    //   setLocalStream(null);
+    // }
+    // if (remoteStream) {
+    //   remoteStream.getTracks().forEach(track => track.stop());
+    //   setRemoteStream(null);
+    // }
+    // socketRef.current.emit('end-call', { room: 'room1' });
+    // setIsCalling(false);
+  };
+  
   // Toggle audio on/off and update any existing tracks
   const toggleAudio = () => {
     const newState = !isAudioEnabled;
@@ -175,6 +201,12 @@ const VideoCallScreen = () => {
       localStream.getVideoTracks().forEach(track => (track.enabled = newState));
     }
   };
+  
+const toggleCamera = async () => {
+  if (!localStream) return;
+  localStream.getVideoTracks()[0]?.applyConstraints({ facingMode: isFrontCamera ? 'environment' : 'user' });
+  setIsFrontCamera(!isFrontCamera);
+};
 
   const renderMessageItem = ({ item }) => (
     <View style={styles.messageItem}>
@@ -182,41 +214,71 @@ const VideoCallScreen = () => {
       <Text style={styles.messageText}>{item.text}</Text>
     </View>
   );
-
   return (
     <SafeAreaView style={styles.container}>
       {/* Video Call Section */}
       <View style={styles.videoContainer}>
-        {remoteStream ? (
-          <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} />
-        ) : (
+      {/* <ScrollView> */}
+        {remoteStream?.length > 0 ? remoteStream.map((stream, index) =>(
+          <View key={stream.toURL()} style={styles.remoteVideo} >
+            <RTCView  
+              zOrder={10}
+              streamURL={stream ? stream.toURL() : null} 
+              style={{
+                flex:1,
+                borderRadius:6,
+                pointerEvents: 'none', 
+                overflow: 'visible',
+                objectFit: 'cover', // Prevents cropping
+              }}  
+              objectFit='cover' />
+          </View>
+        )) : (
           <View style={styles.remoteVideoPlaceholder}>
-            <Text style={{ color: 'white' }}>Waiting for remote stream...</Text>
+            <Text allowFontScaling={false} style={{ color: 'white' }}>Waiting for remote stream...</Text>
           </View>
         )}
-        {localStream && (
-          <RTCView streamURL={localStream.toURL()} style={styles.localVideo} />
+         
+         {localStream && (
+          <View style={styles.localVideo}>
+            <RTCView  
+              zOrder={20}
+              key={localStream.toURL()}
+              streamURL={isVideoEnabled ? localStream.toURL() : null}  
+              style={{
+                flex: 1,
+                width: '100%',
+                height: '100%',
+              }}  
+              objectFit="cover" 
+            />
+          </View>
         )}
+      {/* </ScrollView> */}
       </View>
 
       {/* Call Controls */}
-      <View style={styles.controlsContainer}>
-        <Button title={isCalling ? "In Call" : "Start Call"} onPress={startCall} disabled={isCalling} />
-        <Button title={`Audio ${isAudioEnabled ? 'On' : 'Off'}`} onPress={toggleAudio} />
-        <Button title={`Video ${isVideoEnabled ? 'On' : 'Off'}`} onPress={toggleVideo} />
-      </View>
+      <ScrollView horizontal style={styles.controlsContainer}>
+        {/* <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={isCalling ? endCall : startCall}>{isCalling ? "End Call" : "Start Call"}</Text> */}
+        <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={startCall} disabled={isCalling}>{isCalling ? "In Call" : "Start Call"}</Text>
+        <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleAudio}>{`Audio ${isAudioEnabled ? 'On' : 'Off'}`}</Text>
+        <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleVideo}>{`Video ${isVideoEnabled ? 'On' : 'Off'}`}</Text>
+        <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleCamera}>{`${isFrontCamera ? 'Front' : 'Back'}`}</Text>
+      </ScrollView>
 
       {/* Chat Section */}
       <View style={styles.chatContainer}>
         <FlatList data={messages} renderItem={renderMessageItem} keyExtractor={(item) => item.id} />
         <View style={styles.chatInputContainer}>
           <TextInput
+            allowFontScaling={false}
             style={styles.chatInput}
             value={chatInput}
             onChangeText={setChatInput}
-            placeholder="Type a message..."
+            placeholder={"Type a message..."}
+            placeholderTextColor={'#ccc'}
           />
-          <Button title="Send" onPress={sendChatMessage} />
+          <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'700',color:'#125D98',fontSize:16}} onPress={sendChatMessage}>Send</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -243,19 +305,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
   },
   localVideo: {
-    width: 120,
-    height: 160,
     position: 'absolute',
-    top: 10,
+    bottom: 10,
     right: 10,
+    width: 100,
+    height: 140,
     borderWidth: 2,
     borderColor: '#fff',
+    borderRadius: 6,
+    zIndex: 10, // Ensures it is above remote video
+    elevation: 10, // Works for Android to bring it on top
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Prevents transparency issue
+    overflow: 'hidden',
   },
   controlsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     padding: 10,
-    backgroundColor: '#222',
+    backgroundColor: '#ccc',
+    gap:5,
+    flexGrow: 0
   },
   chatContainer: {
     flex: 1,
@@ -270,9 +337,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 4,
-    paddingHorizontal: 10,
-    height: 40,
+    padding: 8,
+    borderRadius: 8,
   },
   messageItem: {
     flexDirection: 'row',

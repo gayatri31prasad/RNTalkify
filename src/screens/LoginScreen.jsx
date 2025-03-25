@@ -27,7 +27,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <Text allowFontScaling={false} style={{fontSize:34,fontWeight:'700',color:'#FF8000',marginTop:-100,marginBottom:40,alignSelf:'center'}}>Welcome to Talkify</Text>
-      <View style={{width:'100%'}}>
+      <View style={{width:'100%',paddingHorizontal:10}}>
         <Text  allowFontScaling={false} style={{ fontSize: 16,marginBottom:4 }}>Enter Username:</Text>
         <TextInput
           style={styles.input}
@@ -45,6 +45,6 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff', justifyContent:'center' },
+  container: { flex: 1, backgroundColor: '#fff', justifyContent:'center' },
   input: { borderWidth: 1, borderColor: '#ccc', padding: 8,  borderRadius: 4,width:'100%' }
 });

@@ -1,14 +1,16 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-
+const cors = require("cors")
 const app = express();
+app.use(cors())
+app.use(express.json());
 const server = http.createServer(app);
-const io = socketIO(server,{
-    cors: {
+const io = socketIO(server,{  cors: {
       origin: "*",
       // origin: "http://localhost:3000",
-      methods: ["GET", "POST"]
+      // methods: ["GET", "POST"],
+      // allowedHeaders: ['Content-Type', 'Authorization'],
     }
   });
 
@@ -19,6 +21,12 @@ io.on('connection', (socket) => {
   socket.on('join', (room) => {
     socket.join(room);
     console.log(`Socket ${socket.id} joined room ${room}`);
+  });
+
+  // Handle call end
+  socket.on('end-call', (data) => {
+    console.log(`Call ended by ${socket.id} in room ${data.room}`);
+    // socket.to(data.room).emit('call-ended', { from: socket.id });
   });
 
   // WebRTC signaling for voice call
@@ -34,6 +42,7 @@ io.on('connection', (socket) => {
 
   socket.on('ice-candidate', (data) => {
     // data: { room, candidate }
+    // console.log('Received ICE candidate:', data);
     socket.to(data.room).emit('ice-candidate', { candidate: data.candidate, from: socket.id });
   });
 
@@ -49,11 +58,15 @@ io.on('connection', (socket) => {
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-})
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT,'0.0.0.0', () => {
   console.log(`Server is running on port http://localhost:${PORT}`);
 });
+
+app.get('/', (req, res) => {
+  res.json('Hello World!');
+})
+app.post('/', (req, res) => {
+  res.json('Hello World!');
+})
+

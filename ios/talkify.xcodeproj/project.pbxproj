@@ -265,6 +265,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = D8ZG26T5XU;
 				ENABLE_BITCODE = NO;
 				"HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/../node_modules/react-native-webrtc/ios";
 				INFOPLIST_FILE = talkify/Info.plist;
@@ -295,6 +296,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = D8ZG26T5XU;
 				"HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/../node_modules/react-native-webrtc/ios";
 				INFOPLIST_FILE = talkify/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
