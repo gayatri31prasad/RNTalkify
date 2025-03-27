@@ -4,6 +4,7 @@ import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices
 import io from 'socket.io-client';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import InCallManager from 'react-native-incall-manager';
+import DraggableView from '../components/DraggableView';
 
 // Replace with your signaling server address
 const SOCKET_SERVER_URL = 'http://172.20.1.194:3000/';
@@ -19,7 +20,7 @@ const VideoCallScreen = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true); // Video call: video enabled by default
   const [isFrontCamera, setIsFrontCamera] = useState(true);
 
@@ -208,6 +209,30 @@ const toggleCamera = async () => {
   setIsFrontCamera(!isFrontCamera);
 };
 
+  // New function for Screen Sharing
+  const startScreenShare = async () => {
+    try {
+      // IMPORTANT: React Native does not have a built-in getDisplayMedia function.
+      // You must implement native modules (using ReplayKit for iOS or MediaProjection API for Android)
+      // or use a third-party library that supports screen capture.
+      // The following call is a placeholder to illustrate the flow:
+      const screenStream = await mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+      // Optionally, you could create a new peer connection for screen share or add the stream to the existing connection.
+      // Here we assume you add the screenStream tracks to your existing peer connection.
+      setLocalStream(screenStream);
+      screenStream.getTracks().forEach(track => {
+        peerConnectionRef.current.addTrack(track, screenStream);
+      });
+      // Emit a custom socket event to signal that screen sharing is active.
+      socketRef.current.emit('screenshare', { room: 'room1', offer: 'Screen share offer placeholder' });
+      console.log('Screen sharing started');
+    } catch (error) {
+      console.error('Error starting screen share:', error);
+    }
+  };
   const renderMessageItem = ({ item }) => (
     <View style={styles.messageItem}>
       <Text style={styles.messageSender}>{item.sender}:</Text>
@@ -240,7 +265,7 @@ const toggleCamera = async () => {
         )}
          
          {localStream && (
-          <View style={styles.localVideo}>
+          <DraggableView style={styles.localVideo}>
             <RTCView  
               zOrder={20}
               key={localStream.toURL()}
@@ -252,7 +277,7 @@ const toggleCamera = async () => {
               }}  
               objectFit="cover" 
             />
-          </View>
+          </DraggableView>
         )}
       {/* </ScrollView> */}
       </View>
@@ -264,6 +289,10 @@ const toggleCamera = async () => {
         <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleAudio}>{`Audio ${isAudioEnabled ? 'On' : 'Off'}`}</Text>
         <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleVideo}>{`Video ${isVideoEnabled ? 'On' : 'Off'}`}</Text>
         <Text allowFontScaling={false} style={{marginHorizontal:10,fontWeight:'600',color:'#125D98'}} onPress={toggleCamera}>{`${isFrontCamera ? 'Front' : 'Back'}`}</Text>
+        {/* New Control for Screen Share */}
+        <Text allowFontScaling={false} style={{ marginHorizontal: 10, fontWeight: '600', color: '#125D98' }} onPress={startScreenShare}>
+          Share Screen
+        </Text>
       </ScrollView>
 
       {/* Chat Section */}
